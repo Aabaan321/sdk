@@ -1,27 +1,68 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zoom SDK Integration</title>
-</head>
-<body>
-    <h1>Zoom SDK Integration</h1>
-    <p>Include the required Zoom SDK dependencies below:</p>
+const ZoomMtg = require('@zoomus/websdk');
 
-    <!-- Dependencies for client view and component view -->
-    <script src="https://source.zoom.us/{VERSION_NUMBER}/lib/vendor/react.min.js"></script>
-    <script src="https://source.zoom.us/{VERSION_NUMBER}/lib/vendor/react-dom.min.js"></script>
-    <script src="https://source.zoom.us/{VERSION_NUMBER}/lib/vendor/redux.min.js"></script>
-    <script src="https://source.zoom.us/{VERSION_NUMBER}/lib/vendor/redux-thunk.min.js"></script>
-    <script src="https://source.zoom.us/{VERSION_NUMBER}/lib/vendor/lodash.min.js"></script>
+// Set up your Zoom API credentials
+const API_KEY = "YOUR_API_KEY";
+const API_SECRET = "YOUR_API_SECRET";
 
-    <!-- Choose between the client view or component view: -->
+ZoomMtg.preLoadWasm();
+ZoomMtg.prepareJssdk();
 
-    <!-- CDN for client view -->
-    <script src="https://source.zoom.us/zoom-meeting-{VERSION_NUMBER}.min.js"></script>
+// Meeting configuration
+const meetConfig = {
+    apiKey: API_KEY,
+    meetingNumber: "YOUR_MEETING_ID",
+    userName: "Aabaan's AI Tutor",
+    passWord: "YOUR_MEETING_PASSWORD",
+    leaveUrl: "https://yourdomain.com/leave", // URL to redirect after leaving meeting
+    role: 1, // 1 for host, 0 for attendee
+    userEmail: "aabaangr@gmail.com",
+    success: (success) => {
+        console.log("Zoom SDK Initialization Success: ", success);
+    },
+    error: (error) => {
+        console.error("Zoom SDK Initialization Error: ", error);
+    }
+};
 
-    <!-- CDN for component view -->
-    <script src="https://source.zoom.us/zoom-meeting-embedded-{VERSION_NUMBER}.min.js"></script>
-</body>
-</html>
+// Generate signature for authentication
+ZoomMtg.generateSignature({
+    meetingNumber: meetConfig.meetingNumber,
+    apiKey: API_KEY,
+    apiSecret: API_SECRET,
+    role: meetConfig.role,
+    success: (res) => {
+        console.log("Signature Generated: ", res.result);
+        meetConfig.signature = res.result;
+        joinMeeting(meetConfig);
+    },
+    error: (err) => {
+        console.error("Signature Generation Error: ", err);
+    }
+});
+
+// Function to join meeting
+function joinMeeting(config) {
+    ZoomMtg.init({
+        leaveUrl: config.leaveUrl,
+        isSupportAV: true,
+        success: () => {
+            ZoomMtg.join({
+                signature: config.signature,
+                meetingNumber: config.meetingNumber,
+                userName: config.userName,
+                apiKey: config.apiKey,
+                userEmail: config.userEmail,
+                passWord: config.passWord,
+                success: (res) => {
+                    console.log("Join Meeting Success: ", res);
+                },
+                error: (err) => {
+                    console.error("Join Meeting Error: ", err);
+                }
+            });
+        },
+        error: (err) => {
+            console.error("Zoom Initialization Error: ", err);
+        }
+    });
+}
